@@ -1,14 +1,18 @@
 from fastapi import APIRouter
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAIError
 
 from api.http_response import HTTPResponse
-from backend.schema.model import Questionnaire, Exercise
+from schema.model import Questionnaire, Exercise
 from storage.repository import WorkoutRepository, ExerciseRepository
 from agent.assisant import WorkoutAssistantAgent
 
 
 class WorkoutController:
-    def __init__(self, repository: WorkoutRepository, assisant_agent: WorkoutAssistantAgent, router: APIRouter = APIRouter()):
+    def __init__(self,
+                 repository: WorkoutRepository,
+                 assisant_agent: WorkoutAssistantAgent,
+                 router: APIRouter = APIRouter()
+                 ):
         self.router = router
         self.repository = repository
         self.assistant = assisant_agent
@@ -21,7 +25,8 @@ class WorkoutController:
         self.router.delete("/workouts/{workout_id}")(self.remove_workout)
 
     async def create_workout(self, questionnaire: Questionnaire):
-        workout_id = await self.assistant.create_workout_from_questionnaire(questionnaire)
+        workout = await self.assistant.recommend_workout_from_questionnaire(questionnaire)
+        workout_id = await self.repository.add(workout)
         return HTTPResponse(201, "workout created", {
             "id": workout_id
         })
@@ -44,7 +49,11 @@ class WorkoutController:
 
 
 class ExerciseController:
-    def __init__(self, repository: ExerciseRepository, openai_client: AsyncOpenAI, router: APIRouter = APIRouter()):
+    def __init__(self,
+                 repository: ExerciseRepository,
+                 openai_client: AsyncOpenAI,
+                 router: APIRouter = APIRouter()
+                 ):
         self.router = router
         self.repository = repository
         self.openai_client = openai_client
@@ -59,10 +68,14 @@ class ExerciseController:
     async def create_exercise(self, exercise: Exercise):
         embed_text = f"{exercise.name} {exercise.description} {' '.join(exercise.muscle_groups)} {exercise.difficulty} {
             ' '.join(exercise.equipment)} {exercise.instructions} {' '.join(exercise.tags)}"
-        embedding = await self.openai_client.embeddings.create(
-            input=embed_text,
-            model="text-embedding-3-small"
-        )
+        try:
+            embedding = await self.openai_client.embeddings.create(
+                input=embed_text,
+                model="text-embedding-3-small"
+            )
+        except OpenAIError:
+            return HTTPResponse(503, "failed to reach openai")
+
         exercise.embedding = embedding.data[0].embedding
         exercise_id = await self.repository.add(exercise)
         return HTTPResponse(201, "exercise created", {
