@@ -2,7 +2,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing import List, Optional
 
-from api.payload_schema import Workout
+from api.schema import Workout
 
 
 class WorkoutRepository:
@@ -39,3 +39,8 @@ class WorkoutRepository:
     async def remove(self, routine_id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(routine_id)})
         return result.deleted_count > 0
+
+
+class ExerciseRepository:
+    def __init__(self):
+        pass

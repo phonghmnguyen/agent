@@ -15,16 +15,18 @@ class Exercise(BaseModel):
         default="beginner", description="Difficulty level of the exercise")
     equipment: List[str] = Field(
         default_factory=list, description="Equipment needed for the exercise")
-    instructions: List[str] = Field(
+    instructions: str = Field(
         default_factory=list, description="Step-by-step instructions")
     video_url: Optional[HttpUrl] = Field(
         default=None, description="URL to a demonstration video")
     tags: List[str] = Field(default_factory=list,
                             description="Tags for categorization")
+    embedding: SkipJsonSchema[str] = ""
 
 
 class ExerciseInWorkout(BaseModel):
     exercise: Exercise
+    day: str
     duration: Optional[int] = Field(
         default=None, description="Duration of the exercise in seconds")
     repetitions: Optional[int] = Field(
