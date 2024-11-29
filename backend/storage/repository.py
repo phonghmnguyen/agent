@@ -1,8 +1,8 @@
+from typing import List, Optional
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
-from typing import List, Optional
 
-from api.schema import Workout, Exercise
+from schema.model import Workout, Exercise
 
 
 class WorkoutRepository:
@@ -23,18 +23,12 @@ class WorkoutRepository:
             return Workout(**workout_dict)
         return None
 
-    async def list(self) -> List[Workout]:
+    async def list_all(self) -> List[Workout]:
         workouts = []
         async for workout_dict in self.collection.find():
             workout_dict["id"] = str(workout_dict.pop("_id"))
             workouts.append(Workout(**workout_dict))
         return workouts
-
-    async def update(self, workout_id: str, workout: Workout) -> bool:
-        update_data = workout.model_dump(exclude={"id"})
-        result = await self.collection.update_one(
-            {"_id": ObjectId(workout_id)}, {"$set": update_data})
-        return result.modified_count > 0
 
     async def remove(self, workout_id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(workout_id)})
@@ -59,7 +53,7 @@ class ExerciseRepository:
             return Exercise(**exercise_dict)
         return None
 
-    async def list(self) -> List[Exercise]:
+    async def list_all(self) -> List[Exercise]:
         exercises = []
         async for exercise_dict in self.collection.find():
             exercise_dict["id"] = str(exercise_dict.pop("_id"))

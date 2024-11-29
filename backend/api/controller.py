@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from openai import AsyncOpenAI
 
 from api.http_response import HTTPResponse
-from api.schema import Questionnaire, Exercise
+from backend.schema.model import Questionnaire, Exercise
 from storage.repository import WorkoutRepository, ExerciseRepository
 from agent.assisant import WorkoutAssistantAgent
 
@@ -16,7 +16,7 @@ class WorkoutController:
 
     def register_routes(self):
         self.router.post("/workouts")(self.create_workout)
-        self.router.get("/workouts")(self.list_workouts)
+        self.router.get("/workouts")(self.list_all_workouts)
         self.router.get("/workouts/{workout_id}")(self.get_workout)
         self.router.delete("/workouts/{workout_id}")(self.remove_workout)
 
@@ -32,8 +32,8 @@ class WorkoutController:
             return HTTPResponse(404, "workout not found")
         return HTTPResponse(200, "workout retrieved", workout.model_dump())
 
-    async def list_workouts(self):
-        workouts = await self.repository.list()
+    async def list_all_workouts(self):
+        workouts = await self.repository.list_all()
         return HTTPResponse(200, "workouts retrieved", [workout.model_dump() for workout in workouts])
 
     async def remove_workout(self, workout_id: str):
@@ -52,7 +52,7 @@ class ExerciseController:
 
     def register_routes(self):
         self.router.post("/exercises")(self.create_exercise)
-        self.router.get("/exercises")(self.list_exercises)
+        self.router.get("/exercises")(self.list_all_exercises)
         self.router.get("/exercises/{exercise_id}")(self.get_exercise)
         self.router.delete("/exercises/{exercise_id}")(self.remove_exercise)
 
@@ -63,7 +63,7 @@ class ExerciseController:
             input=embed_text,
             model="text-embedding-3-small"
         )
-        exercise.embedding = embedding
+        exercise.embedding = embedding.data[0].embedding
         exercise_id = await self.repository.add(exercise)
         return HTTPResponse(201, "exercise created", {
             "id": exercise_id
@@ -75,8 +75,8 @@ class ExerciseController:
             return HTTPResponse(404, "exercise not found")
         return HTTPResponse(200, "exercise retrieved", exercise.model_dump(exclude={"embedding"}))
 
-    async def list_exercises(self):
-        exercises = await self.repository.list()
+    async def list_all_exercises(self):
+        exercises = await self.repository.list_all()
         return HTTPResponse(200, "exercises retrieved", [exercise.model_dump(exclude={"embedding"}) for exercise in exercises])
 
     async def remove_exercise(self, exercise_id: str):

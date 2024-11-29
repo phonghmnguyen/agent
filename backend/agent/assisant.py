@@ -5,9 +5,7 @@ from dataclasses import dataclass
 from haystack.dataclasses import ChatMessage
 from haystack.components.generators.chat import OpenAIChatGenerator
 
-from llm_agent.agents.base import BaseAgent
-from llm_agent.agents.tools import FuncTool
-
+from schema.model import Questionnaire
 
 T = TypeVar("T")
 
@@ -78,3 +76,6 @@ class WorkoutAssistantAgent:
                     "tools": self.tool_schema})
 
         return response["replies"][0] if response else ChatMessage.from_assistant("Failed to generate answer")
+
+    def create_workout_from_questionnaire(questionnaire: Questionnaire):
+        pass

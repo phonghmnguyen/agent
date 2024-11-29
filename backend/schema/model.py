@@ -21,11 +21,11 @@ class Exercise(BaseModel):
         default=None, description="URL to a demonstration video")
     tags: List[str] = Field(default_factory=list,
                             description="Tags for categorization")
-    embedding: SkipJsonSchema[str] = ""
+    embedding: SkipJsonSchema[List[float]] = []
 
 
 class ExerciseInWorkout(BaseModel):
-    exercise: Exercise
+    exercise_id: str
     day: str
     duration: Optional[int] = Field(
         default=None, description="Duration of the exercise in seconds")
@@ -42,21 +42,11 @@ class ExerciseInWorkout(BaseModel):
 
 class Workout(BaseModel):
     id: SkipJsonSchema[str] = ""
-    name: str
-    description: str
     exercises: List[ExerciseInWorkout]
-    difficulty: str = Field(default="Intermediate",
-                            description="Difficulty level of the workout")
     estimated_duration: Optional[int] = Field(
-        default=None, description="Estimated duration of the workout in minutes")
+        default=None, description="Estimated duration of the workout in seconds")
     target_muscle_groups: List[str] = Field(
         default_factory=list, description="Main muscle groups targeted")
-    frequency: Optional[str] = Field(
-        default=None, description="Recommended frequency of the routine")
-    goals: List[str] = Field(default_factory=list,
-                             description="Intended outcomes of the routine")
-    required_equipment: List[str] = Field(
-        default_factory=list, description="Equipment needed for the entire routine")
     total_calories_burned: Optional[int] = Field(
         default=None, description="Estimated total calories burned")
     created_for: Optional[str] = Field(
