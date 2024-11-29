@@ -11,7 +11,7 @@ export default function NeuroFitLanding() {
                 <div className="px-4 lg:px-6 h-14 flex items-center justify-between max-w-7xl mx-auto">
                     <a className="flex items-center justify-center" href="/">
                         <Target className="h-6 w-6" />
-                        <span className="ml-2 text-2xl font-bold">NeuroFit</span>
+                        <span className="ml-2 text-2xl font-bold">Fitness 101</span>
                     </a>
                     <nav className="flex gap-4 sm:gap-6">
                         <a className="text-sm font-medium hover:underline underline-offset-4" href="#features">

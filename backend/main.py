@@ -4,18 +4,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from api.routine_controller import RoutineController
-from infra.repositories import RoutineRepository
+from api.controller import WorkoutController
+from storage.repository import WorkoutRepository
 
 app = FastAPI()
 
 
 def main():
     load_dotenv()
-    routine_repository = RoutineRepository(os.environ.get(
-        "MONGO_URI"), os.environ.get("MONGO_DB_NAME"))
-    routine_controller = RoutineController(routine_repository)
-    app.include_router(routine_controller.router, prefix="/api")
+    workout_repository = WorkoutRepository(os.environ.get(
+        "MONGO_URI"), os.environ.get("MONGO_DB_NAME"), "workouts")
+    workout_controller = WorkoutController(workout_repository)
+    app.include_router(workout_controller.router, prefix="/api")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

@@ -6,10 +6,10 @@ from api.payload_schema import Workout
 
 
 class WorkoutRepository:
-    def __init__(self, mongo_uri: str, db_name: str):
+    def __init__(self, mongo_uri: str, db_name: str, collection_name: str):
         self.client = AsyncIOMotorClient(mongo_uri)
         self.db = self.client[db_name]
-        self.collection = self.db["routines"]
+        self.collection = self.db[collection_name]
 
     async def add(self, routine: Workout) -> str:
         routine_dict = routine.model_dump(exclude={"id"})
