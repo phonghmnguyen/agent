@@ -47,11 +47,14 @@ class ExerciseController:
     def __init__(self, repository: ExerciseRepository, openai_client: AsyncOpenAI, router: APIRouter = APIRouter()):
         self.router = router
         self.repository = repository
-        self.register_routes()
         self.openai_client = openai_client
+        self.register_routes()
 
     def register_routes(self):
-        pass
+        self.router.post("/exercises")(self.create_exercise)
+        self.router.get("/exercises")(self.list_exercises)
+        self.router.get("/exercises/{exercise_id}")(self.get_exercise)
+        self.router.delete("/exercises/{exercise_id}")(self.remove_exercise)
 
     async def create_exercise(self, exercise: Exercise):
         embed_text = f"{exercise.name} {exercise.description} {' '.join(exercise.muscle_groups)} {exercise.difficulty} {

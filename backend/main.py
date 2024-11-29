@@ -3,18 +3,26 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 
-from api.controller import WorkoutController
-from storage.repository import WorkoutRepository
+from api.controller import WorkoutController, ExerciseController
+from storage.repository import WorkoutRepository, ExerciseRepository
 
 app = FastAPI()
 
 
 def main():
+    mongo_uri, mongo_db_name = os.environ.get(
+        "MONGO_URI"), os.environ.get("MONGO_DB_NAME")
     load_dotenv()
-    workout_repository = WorkoutRepository(os.environ.get(
-        "MONGO_URI"), os.environ.get("MONGO_DB_NAME"), "workouts")
+    openai_async_client = AsyncOpenAI()
+    workout_repository = WorkoutRepository(
+        mongo_uri, mongo_db_name, "workouts")
     workout_controller = WorkoutController(workout_repository)
+    exercise_repository = ExerciseRepository(
+        mongo_uri, mongo_db_name, "exercises")
+    exercise_controller = ExerciseController(
+        exercise_repository, openai_async_client)
     app.include_router(workout_controller.router, prefix="/api")
     app.add_middleware(
         CORSMiddleware,
