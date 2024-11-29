@@ -7,9 +7,6 @@ from pydantic.json_schema import SkipJsonSchema
 
 
 class Exercise(BaseModel):
-    """
-    Represents a single exercise.
-    """
     id: SkipJsonSchema[str] = ""
     name: str
     description: str
@@ -26,10 +23,7 @@ class Exercise(BaseModel):
                             description="Tags for categorization")
 
 
-class ExerciseInRoutine(BaseModel):
-    """
-    Represents how an exercise is performed within a specific routine.
-    """
+class ExerciseInWorkout(BaseModel):
     exercise: Exercise
     duration: Optional[int] = Field(
         default=None, description="Duration of the exercise in seconds")
@@ -44,14 +38,11 @@ class ExerciseInRoutine(BaseModel):
         default=None, description="Specific notes for this exercise in this routine")
 
 
-class Routine(BaseModel):
-    """
-    Represents a workout routine containing multiple exercises.
-    """
+class Workout(BaseModel):
     id: SkipJsonSchema[str] = ""
     name: str
     description: str
-    exercises: List[ExerciseInRoutine]
+    exercises: List[ExerciseInWorkout]
     difficulty: str = Field(default="Intermediate",
                             description="Difficulty level of the workout")
     estimated_duration: Optional[int] = Field(
