@@ -1,12 +1,11 @@
 import json
-from typing import List, Dict, Callable, TypeVar, TypedDict, Generic
+from typing import List, Dict, Callable, TypeVar, Generic
 from dataclasses import dataclass
 
 from haystack.dataclasses import ChatMessage
 from haystack.components.generators.chat import OpenAIChatGenerator
 
-from llm_agent.agents.base import BaseAgent
-from llm_agent.agents.tools import FuncTool
+from schema.model import Questionnaire, Workout
 
 
 T = TypeVar("T")
@@ -14,16 +13,10 @@ T = TypeVar("T")
 
 @dataclass
 class FuncTool(Generic[T]):
-    class Params(TypedDict):
-        name: str
-        param_type: str
-        desc: str
-        required: bool
-
     name: str
     desc: str
     func: Callable[..., T]
-    params: List[Params]
+    params: Dict
 
 
 class WorkoutAssistantAgent:
@@ -40,17 +33,7 @@ class WorkoutAssistantAgent:
             "function": {
                 "name": tool.name,
                 "description": tool.desc,
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        param.name: {
-                            "type": param.type,
-                            "description": param.desc
-                        }
-                        for param in tool.params
-                    }
-
-                }
+                "parameters": tool.params,
             }
         }
             for tool in tools]
@@ -60,7 +43,7 @@ class WorkoutAssistantAgent:
         """)
         self.llm = OpenAIChatGenerator()
 
-    def run(self, message: str, memory: List[ChatMessage]) -> ChatMessage:
+    def chat(self, message: str, memory: List[ChatMessage]) -> ChatMessage:
         holistic_view = [self.instructions, *
                          memory, ChatMessage.from_user(message)]
         response = self.llm.run(messages=holistic_view, generation_kwargs={
@@ -78,3 +61,6 @@ class WorkoutAssistantAgent:
                     "tools": self.tool_schema})
 
         return response["replies"][0] if response else ChatMessage.from_assistant("Failed to generate answer")
+
+    def recommend_workout_from_questionnaire(questionnaire: Questionnaire) -> Workout:
+        pass
