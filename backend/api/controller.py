@@ -27,25 +27,23 @@ class WorkoutController:
     async def create_workout(self, questionnaire: Questionnaire):
         workout = await self.assistant.recommend_workout_from_questionnaire(questionnaire)
         workout_id = await self.repository.add(workout)
-        return HTTPResponse(201, "workout created", {
-            "id": workout_id
-        })
+        return HTTPResponse(201,  {"id": workout_id})
 
     async def get_workout(self, workout_id: str):
         workout = await self.repository.get(workout_id)
         if not workout:
-            return HTTPResponse(404, "workout not found")
-        return HTTPResponse(200, "workout retrieved", workout.model_dump())
+            return HTTPResponse(404)
+        return HTTPResponse(200, workout.model_dump())
 
     async def list_all_workouts(self):
         workouts = await self.repository.list_all()
-        return HTTPResponse(200, "workouts retrieved", [workout.model_dump() for workout in workouts])
+        return HTTPResponse(200, [workout.model_dump() for workout in workouts])
 
     async def remove_workout(self, workout_id: str):
         removed = await self.repository.remove(workout_id)
         if not removed:
-            return HTTPResponse(404, "workout not found")
-        return HTTPResponse(204, "workout removed")
+            return HTTPResponse(404)
+        return HTTPResponse(204)
 
 
 class ExerciseController:
@@ -74,26 +72,24 @@ class ExerciseController:
                 model="text-embedding-3-small"
             )
         except OpenAIError:
-            return HTTPResponse(503, "failed to reach openai")
+            return HTTPResponse(503)
 
         exercise.embedding = embedding.data[0].embedding
         exercise_id = await self.repository.add(exercise)
-        return HTTPResponse(201, "exercise created", {
-            "id": exercise_id
-        })
+        return HTTPResponse(201, {"id": exercise_id})
 
     async def get_exercise(self, exercise_id: str):
         exercise = await self.repository.get(exercise_id)
         if not exercise:
-            return HTTPResponse(404, "exercise not found")
-        return HTTPResponse(200, "exercise retrieved", exercise.model_dump(exclude={"embedding"}))
+            return HTTPResponse(404)
+        return HTTPResponse(200, exercise.model_dump(exclude={"embedding"}))
 
     async def list_all_exercises(self):
         exercises = await self.repository.list_all()
-        return HTTPResponse(200, "exercises retrieved", [exercise.model_dump(exclude={"embedding"}) for exercise in exercises])
+        return HTTPResponse(200, [exercise.model_dump(exclude={"embedding"}) for exercise in exercises])
 
     async def remove_exercise(self, exercise_id: str):
         removed = await self.repository.remove(exercise_id)
         if not removed:
-            return HTTPResponse(404, "exercise not found")
-        return HTTPResponse(204, "exercise removed")
+            return HTTPResponse(404)
+        return HTTPResponse(204)
