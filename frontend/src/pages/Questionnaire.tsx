@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
+import { useAuth0 } from "@auth0/auth0-react";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,19 +36,28 @@ export default function Questionnaire() {
         workoutDuration: 30
     })
 
+    const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
     const [isLoading, setIsLoading] = useState(false)
     const { toast } = useToast()
     const navigate = useNavigate();
+
+    const handleSkip = async () => {
+        navigate("/routine")
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
 
-        console.log(preferences)
         try {
-            const response = await fetch('http://0.0.0.0:8000/api/routines', {
+            if (!isAuthenticated || !user) return;
+
+            // Fetch access token
+            const token = await getAccessTokenSilently();
+            const response = await fetch('http://0.0.0.0:8000/api/workouts', {
                 method: 'POST',
                 headers: {
+                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -61,10 +71,7 @@ export default function Questionnaire() {
                 }),
             })
 
-
-
             const data = await response.json()
-            await new Promise((resolve) => setTimeout(resolve, 4000));
             console.log(data)
 
 
@@ -232,9 +239,16 @@ export default function Questionnaire() {
                                 Submit Preferences
                             </Button>)}
 
+
+
                     </CardFooter>
                 </form>
             </Card>
+            <div className="flex justify-center mt-6">
+                <Button onClick={handleSkip}>
+                    Already submit your preferences? Skip
+                </Button>
+            </div>
         </div>
     )
 }
