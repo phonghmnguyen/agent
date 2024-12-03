@@ -62,5 +62,5 @@ class WorkoutAssistantAgent:
 
         return response["replies"][0] if response else ChatMessage.from_assistant("Failed to generate answer")
 
-    def recommend_workout_from_questionnaire(questionnaire: Questionnaire) -> Workout:
+    def plan_workout_from_questionnaire(user_id: str, questionnaire: Questionnaire) -> Workout:
         pass
