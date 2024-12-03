@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,9 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import StatCard from '@/components/StatCard'
 import LogoutButton from '@/components/LogoutButton'
 import Confetti from 'react-confetti'
+import { useAuth0 } from "@auth0/auth0-react";
 
 const workoutRoutine = {
     weeklyPlan: [
@@ -108,7 +108,34 @@ const userProfile = {
     ],
 }
 
+type Exercise = {
+    exercise_name: string;
+    day: string;
+    duration: number; // Duration in seconds
+    repetitions: number;
+    sets: number;
+    notes: string;
+};
+
+type ExercisesByDay = {
+    day: string;
+    exercises: Exercise[];
+}[];
+
+type Workout = {
+    id: string;
+    user_id: string;
+    estimated_duration: number; // Estimated duration in minutes
+    exercises: Exercise[];
+    target_muscle_groups: string[];
+    total_calories_burned: number;
+    exercise_by_day: ExercisesByDay
+};
+
+
 export default function WorkoutRoutine() {
+    const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
+    const [workout, setWorkout] = useState<Workout | null>(null)
     const [activeDay, setActiveDay] = useState(workoutRoutine.weeklyPlan[0].day.toLowerCase())
     const [isChatOpen, setIsChatOpen] = useState(false)
     const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai'; content: string }[]>([])
@@ -116,6 +143,78 @@ export default function WorkoutRoutine() {
     const [workoutStarted, setWorkoutStarted] = useState(false)
     const [showConfetti, setShowConfetti] = useState(false)
     const { toast } = useToast()
+
+    useEffect(() => {
+        const fetchWorkoutRoutine = async () => {
+            try {
+                if (!isAuthenticated || !user) return;
+
+                // Fetch access token
+                const token = await getAccessTokenSilently();
+                console.log("FETCHING")
+                console.log(token)
+
+                // Make API call with fetch
+                const response = await fetch('http://0.0.0.0:8000/api/workouts/', {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                console.log(response)
+                const body = await response.json();
+                const data = body["message"]
+                console.log(data)
+
+                const exercises: Exercise[] = data.exercises.map((exercise: any) => ({
+                    exercise_name: exercise.exercise_name,
+                    day: exercise.day,
+                    duration: exercise.duration,
+                    repetitions: exercise.repetitions,
+                    sets: exercise.sets,
+                    notes: exercise.notes,
+                }));
+
+                // Group exercises by day into an array of objects
+                const uniqueDays = Array.from(new Set(exercises.map((exercise) => exercise.day)));
+
+                const exercisesByDay = uniqueDays.map((day) => {
+                    const dayExercises = exercises.filter((exercise) => exercise.day === day);
+                    return { day, exercises: dayExercises };
+                });
+
+                // Set workout routine state
+                const workout: Workout = {
+                    id: data.id,
+                    user_id: data.user_id,
+                    estimated_duration: data.estimated_duration,
+                    exercises: exercises,
+                    exercise_by_day: exercisesByDay,
+                    target_muscle_groups: data.target_muscle_groups,
+                    total_calories_burned: data.total_calories_burned,
+                };
+                setWorkout(workout);
+                console.log(workout)
+
+            } catch (error: any) {
+                console.error('Failed to fetch workout routine:', error);
+                toast({
+                    title: 'Error fetching workout routine',
+                    description: error.message || 'Something went wrong',
+                });
+            }
+        };
+
+        fetchWorkoutRoutine();
+    }, [isAuthenticated, user, getAccessTokenSilently, toast]);
+
 
     const handleSendMessage = () => {
         if (inputMessage.trim()) {
@@ -149,117 +248,10 @@ export default function WorkoutRoutine() {
             <div className="w-full max-w-4xl">
                 <Card className="w-full">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold text-center">Your Neurofit Journey</CardTitle>
-                        <CardDescription className="text-center">Personalized workout routine and progress tracker</CardDescription>
+                        <CardTitle className="text-3xl font-bold text-center">Your Fitness101 Journey</CardTitle>
+                        <CardDescription className="text-center">Personalized workout with AI fitness assistant</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            <StatCard
-                                icon={Flame}
-                                title="Calories Burned"
-                                value={workoutRoutine.caloriesBurned}
-                                detail={
-                                    <div className="space-y-2">
-                                        <h3 className="font-semibold">Calorie Breakdown</h3>
-                                        {workoutRoutine.weeklyPlan.map(day => (
-                                            <div key={day.day} className="flex justify-between items-center">
-                                                <span>{day.day}</span>
-                                                <span>{day.caloriesBurned} cal</span>
-                                            </div>
-                                        ))}
-                                        <h3 className="font-semibold mt-4">Top Calorie-Burning Exercises</h3>
-                                        {workoutRoutine.weeklyPlan.flatMap(day => day.exercises)
-                                            .sort((a, b) => b.caloriesBurn - a.caloriesBurn)
-                                            .slice(0, 3)
-                                            .map(exercise => (
-                                                <div key={exercise.name} className="flex justify-between items-center">
-                                                    <span>{exercise.name}</span>
-                                                    <span>{exercise.caloriesBurn} cal</span>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
-                                }
-                            />
-                            <StatCard
-                                icon={Calendar}
-                                title="Workouts Completed"
-                                value={workoutRoutine.workoutsCompleted}
-                                detail={
-                                    <div className="space-y-2">
-                                        <h3 className="font-semibold">Workout History</h3>
-                                        <div className="grid grid-cols-7 gap-2">
-                                            {Array.from({ length: 28 }, (_, i) => (
-                                                <div
-                                                    key={i}
-                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${i < workoutRoutine.workoutsCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                                                        }`}
-                                                >
-                                                    {i + 1}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <p className="text-sm mt-2">You've completed {workoutRoutine.workoutsCompleted} workouts in the last 28 days. Keep up the great work!</p>
-                                    </div>
-                                }
-                            />
-                            <StatCard
-                                icon={TrendingUp}
-                                title="Day Streak"
-                                value={workoutRoutine.streakDays}
-                                detail={
-                                    <div className="space-y-2">
-                                        <h3 className="font-semibold">Your Workout Streak</h3>
-                                        <div className="flex items-center space-x-2">
-                                            <Flame className="text-orange-500" />
-                                            <span className="text-2xl font-bold">{workoutRoutine.streakDays} days</span>
-                                        </div>
-                                        <p className="text-sm">You're on fire! You've worked out consistently for {workoutRoutine.streakDays} days in a row.</p>
-                                        <h3 className="font-semibold mt-4">Streak Milestones</h3>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center">
-                                                <span>30 days</span>
-                                                <Badge variant={workoutRoutine.streakDays >= 30 ? "default" : "secondary"}>
-                                                    {workoutRoutine.streakDays >= 30 ? "Achieved" : "Upcoming"}
-                                                </Badge>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span>60 days</span>
-                                                <Badge variant={workoutRoutine.streakDays >= 60 ? "default" : "secondary"}>
-                                                    {workoutRoutine.streakDays >= 60 ? "Achieved" : "Upcoming"}
-                                                </Badge>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span>90 days</span>
-                                                <Badge variant={workoutRoutine.streakDays >= 90 ? "default" : "secondary"}>
-                                                    {workoutRoutine.streakDays >= 90 ? "Achieved" : "Upcoming"}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            />
-                            <StatCard
-                                icon={Award}
-                                title="Personal Bests"
-                                value={workoutRoutine.personalBests.length}
-                                detail={
-                                    <div className="space-y-2">
-                                        <h3 className="font-semibold">Your Personal Records</h3>
-                                        {workoutRoutine.personalBests.map((pb, index) => (
-                                            <div key={index} className="flex justify-between items-center">
-                                                <span>{pb.exercise}</span>
-                                                <div className="text-right">
-                                                    <span className="font-semibold">{pb.value}</span>
-                                                    <span className="text-xs text-gray-500 block">{pb.date}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <p className="text-sm mt-2">Keep pushing your limits and setting new records!</p>
-                                    </div>
-                                }
-                            />
-                        </div>
 
                         <Card className="mb-6">
                             <CardHeader>
@@ -268,57 +260,42 @@ export default function WorkoutRoutine() {
                             <CardContent>
                                 <div className="flex items-center space-x-4 mb-4">
                                     <Avatar className="w-20 h-20">
-                                        <AvatarImage src={userProfile.avatar} alt={userProfile.name} />
-                                        <AvatarFallback>{userProfile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        <AvatarImage src={user?.picture} alt={userProfile.name} />
+                                        <AvatarFallback>{user?.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <h2 className="text-2xl font-bold">{userProfile.name}</h2>
-                                        <p className="text-muted-foreground">Level {userProfile.level} Fitness Enthusiast</p>
+                                        <h2 className="text-2xl font-bold">{user?.name}</h2>
+                                        <p className="text-muted-foreground">{user?.email}</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div>
-                                        <p className="text-sm text-muted-foreground">XP Progress</p>
-                                        <p className="font-semibold">{userProfile.xp} / {userProfile.xpToNextLevel} XP</p>
-                                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-1">
-                                            <div className="bg-primary h-2.5 rounded-full" style={{ width: `${(userProfile.xp / userProfile.xpToNextLevel) * 100}%` }}></div>
-                                        </div>
+                                        <p className="text-sm text-muted-foreground">Workout Plan</p>
+                                        <p className="font-semibold flex items-center">
+                                            <Dumbbell className="w-4 h-4 mr-1" />
+                                            {workout?.exercises.length} exercises over {workout?.exercise_by_day.length} days
+                                        </p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Fitness Goal</p>
+                                        <p className="text-sm text-muted-foreground">Target Muscle Groups</p>
                                         <p className="font-semibold flex items-center">
                                             <Target className="w-4 h-4 mr-1" />
-                                            {userProfile.fitnessGoal}
+                                            {workout?.target_muscle_groups.join(", ")}
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Preferred Workout Duration</p>
                                         <p className="font-semibold flex items-center">
                                             <Clock className="w-4 h-4 mr-1" />
-                                            {userProfile.preferredWorkoutDuration} minutes
+                                            {workout?.estimated_duration} minutes
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Total Workouts</p>
+                                        <p className="text-sm text-muted-foreground">Estimated Calories Burn</p>
                                         <p className="font-semibold flex items-center">
                                             <Dumbbell className="w-4 h-4 mr-1" />
-                                            {workoutRoutine.workoutsCompleted}
+                                            {workout?.total_calories_burned}
                                         </p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold mb-2">Achievements</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                        {userProfile.achievements.map((achievement, index) => (
-                                            <div key={index} className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                                                <span className="text-2xl">{achievement.icon}</span>
-                                                <div>
-                                                    <p className="font-semibold">{achievement.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{achievement.description}</p>
-                                                </div>
-                                            </div>
-
-                                        ))}
                                     </div>
                                 </div>
                             </CardContent>
@@ -332,7 +309,7 @@ export default function WorkoutRoutine() {
                                 <Tabs value={activeDay} onValueChange={setActiveDay} className="w-full">
                                     <ScrollArea className="w-full whitespace-nowrap rounded-md border">
                                         <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
-                                            {workoutRoutine.weeklyPlan.map((day) => (
+                                            {workout?.exercise_by_day.map((day) => (
                                                 <TabsTrigger
                                                     key={day.day}
                                                     value={day.day.toLowerCase()}
@@ -343,12 +320,11 @@ export default function WorkoutRoutine() {
                                             ))}
                                         </TabsList>
                                     </ScrollArea>
-                                    {workoutRoutine.weeklyPlan.map((day) => (
+                                    {workout?.exercise_by_day.map((day) => (
                                         <TabsContent key={day.day} value={day.day.toLowerCase()}>
                                             <Card>
                                                 <CardHeader>
-                                                    <CardTitle className="text-2xl">{day.day} - {day.focus}</CardTitle>
-                                                    <CardDescription>Estimated calorie burn: {day.caloriesBurned}</CardDescription>
+                                                    <CardTitle className="text-2xl">{day.day}</CardTitle>
                                                 </CardHeader>
                                                 <CardContent>
                                                     <ScrollArea className="h-[300px] w-full rounded-md border p-4">
@@ -357,7 +333,7 @@ export default function WorkoutRoutine() {
                                                                 <div key={index} className="flex items-center justify-between border-b pb-2">
                                                                     <div className="flex items-center space-x-2">
                                                                         <Dumbbell className="w-5 h-5" />
-                                                                        <span className="font-medium">{exercise.name}</span>
+                                                                        <span className="font-medium">{exercise.exercise_name}</span>
                                                                     </div>
                                                                     <div className="flex items-center space-x-2">
                                                                         <Checkbox disabled={!workoutStarted} />
@@ -365,7 +341,7 @@ export default function WorkoutRoutine() {
                                                                             {exercise.sets} sets
                                                                         </Badge>
                                                                         <Badge variant="secondary">
-                                                                            {exercise.reps ? `${exercise.reps} reps` : exercise.duration}
+                                                                            {exercise.repetitions ? `${exercise.repetitions} reps` : exercise.duration}
                                                                         </Badge>
                                                                         <Sheet>
                                                                             <SheetTrigger asChild>
@@ -375,17 +351,18 @@ export default function WorkoutRoutine() {
                                                                             </SheetTrigger>
                                                                             <SheetContent side="left" className="w-[100%] sm:w-[540px] sm:max-w-none">
                                                                                 <SheetHeader>
-                                                                                    <SheetTitle>{exercise.name} Demonstration</SheetTitle>
+                                                                                    <SheetTitle>{exercise.exercise_name} Demonstration</SheetTitle>
                                                                                 </SheetHeader>
+
                                                                                 <div className="mt-4 aspect-video">
-                                                                                    <video
-                                                                                        controls
+                                                                                    <iframe
                                                                                         className="w-full h-full rounded-lg"
-                                                                                        src={exercise.videoUrl}
-                                                                                    >
-                                                                                        Your browser does not support the video tag.
-                                                                                    </video>
+                                                                                        src="https://www.youtube.com/embed/0BjlBnfHcHM?si=_aGHwgYtNuYjgZa2"
+                                                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                                        allowFullScreen
+                                                                                    ></iframe>
                                                                                 </div>
+
                                                                             </SheetContent>
                                                                         </Sheet>
                                                                     </div>
@@ -474,4 +451,3 @@ export default function WorkoutRoutine() {
         </div>
     )
 }
-

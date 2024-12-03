@@ -20,31 +20,29 @@ class WorkoutController:
                  ):
         self.router = router
         self.repository = repository
-        self.assistant = assisant_agent,
+        self.assistant = assisant_agent
         self.token_verifier = token_verifier
         self.register_routes()
 
     def register_routes(self):
         self.router.post("/workouts")(self.create_workout)
-        self.router.get("/workouts")(self.list_all_workouts)
-        self.router.get("/workouts/{workout_id}")(self.get_workout)
+        self.router.get("/workouts")(self.get_workout)
         self.router.delete("/workouts/{workout_id}")(self.remove_workout)
 
     async def create_workout(self, questionnaire: Questionnaire, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
         user_id = await self.token_verifier.verify(token)
+        print(f"SET{user_id}")
         workout_id = await self.assistant.plan_workout_from_questionnaire(user_id, questionnaire)
         return HTTPResponse(201,  {"id": workout_id})
 
     async def get_workout(self, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
         user_id = await self.token_verifier.verify(token)
+        print(f"GET{user_id}")
         workout = await self.repository.get(user_id)
+        print(workout)
         if not workout:
             return HTTPResponse(404)
         return HTTPResponse(200, workout.model_dump())
-
-    async def list_all_workouts(self):
-        workouts = await self.repository.list_all()
-        return HTTPResponse(200, [workout.model_dump() for workout in workouts])
 
     async def remove_workout(self, workout_id: str):
         removed = await self.repository.remove(workout_id)
@@ -71,8 +69,8 @@ class ExerciseController:
         self.router.delete("/exercises/{exercise_id}")(self.remove_exercise)
 
     async def create_exercise(self, exercise: Exercise):
-        embed_text = f"{exercise.name} {exercise.description} {' '.join(exercise.muscle_groups)} {exercise.difficulty} {
-            ' '.join(exercise.equipment)} {exercise.instructions} {' '.join(exercise.tags)}"
+        embed_text = f"name: {exercise.name}, description: {exercise.description}, muscle groups: {' '.join(exercise.muscle_groups)}, difficulty: {exercise.difficulty}, equipments: {
+            ' '.join(exercise.equipments)}, instructions: {exercise.instructions}, tags: {' '.join(exercise.tags)}"
         try:
             embedding = await self.openai_client.embeddings.create(
                 input=embed_text,
@@ -81,6 +79,7 @@ class ExerciseController:
         except OpenAIError:
             return HTTPResponse(503)
 
+        exercise.content = embed_text
         exercise.embedding = embedding.data[0].embedding
         exercise_id = await self.repository.add(exercise)
         return HTTPResponse(201, {"id": exercise_id})

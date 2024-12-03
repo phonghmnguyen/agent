@@ -16,8 +16,8 @@ class WorkoutRepository:
         result = await self.collection.insert_one(workout_dict)
         return str(result.inserted_id)
 
-    async def get(self, workout_id: str) -> Optional[Workout]:
-        workout_dict = await self.collection.find_one({"_id": ObjectId(workout_id)})
+    async def get(self, user_id: str) -> Optional[Workout]:
+        workout_dict = await self.collection.find_one({"user_id": user_id})
         if workout_dict:
             workout_dict["id"] = str(workout_dict.pop("_id"))
             return Workout(**workout_dict)
@@ -43,11 +43,12 @@ class ExerciseRepository:
 
     async def add(self, exercise: Exercise) -> str:
         exercise_dict = exercise.model_dump(exclude={"id"})
+        exercise_dict["_id"] = exercise_dict["name"]
         result = await self.collection.insert_one(exercise_dict)
         return str(result.inserted_id)
 
     async def get(self, exercise_id: str) -> Optional[Exercise]:
-        exercise_dict = await self.collection.find_one({"_id": ObjectId(exercise_id)})
+        exercise_dict = await self.collection.find_one({"_id": exercise_id})
         if exercise_dict:
             exercise_dict["id"] = str(exercise_dict.pop("_id"))
             return Exercise(**exercise_dict)
@@ -61,5 +62,5 @@ class ExerciseRepository:
         return exercises
 
     async def remove(self, exercise_id: str) -> bool:
-        result = await self.collection.delete_one({"_id": ObjectId(exercise_id)})
+        result = await self.collection.delete_one({"_id": exercise_id})
         return result.deleted_count > 0

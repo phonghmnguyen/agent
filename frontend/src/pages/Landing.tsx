@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Brain, Dumbbell, Smartphone, Target } from "lucide-react"
+import { Brain, Dumbbell, Smartphone } from "lucide-react"
 import LoginButton from "@/components/LoginButton"
 
 export default function NeuroFitLanding() {
@@ -10,7 +10,6 @@ export default function NeuroFitLanding() {
             <header className="fixed top-0 left-0 right-0 w-full bg-white/70 backdrop-blur-md shadow-md z-50 transition-colors duration-300">
                 <div className="px-4 lg:px-6 h-14 flex items-center justify-between max-w-7xl mx-auto">
                     <a className="flex items-center justify-center" href="/">
-                        <Target className="h-6 w-6" />
                         <span className="ml-2 text-2xl font-bold">Fitness 101</span>
                     </a>
                     <nav className="flex gap-4 sm:gap-6">
@@ -35,10 +34,10 @@ export default function NeuroFitLanding() {
                         <div className="flex flex-col items-center space-y-4 text-center">
                             <div className="space-y-2">
                                 <h1 className="text-3xl bg-gradient-to-r from-orange-700 via-blue-500 to-green-400 text-transparent bg-clip-text animate-gradient font-bold bg-300% tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                                    Feedback. Adapt. Progress.
+                                    Fitness101
                                 </h1>
                                 <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                                    Unlock your potential with tailored workouts and real-time feedback to transform your body.
+                                    Unlock your potential with tailored workouts and personalized assistance
                                 </p>
                             </div>
                             <div className="space-x-4">
@@ -55,9 +54,9 @@ export default function NeuroFitLanding() {
                             <Card>
                                 <CardContent className="flex flex-col items-center space-y-2 p-6">
                                     <Brain className="h-12 w-12 mb-2 text-primary" />
-                                    <h3 className="text-xl font-bold">Video Feedback</h3>
+                                    <h3 className="text-xl font-bold">AI Fitness Assistant</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                                        Submit your workout videos and receive instant personalized feedback to optimize your performance.
+                                        Guidance that evolves with your needs throughout your fitness journey.
                                     </p>
                                 </CardContent>
                             </Card>
@@ -75,7 +74,7 @@ export default function NeuroFitLanding() {
                                     <Smartphone className="h-12 w-12 mb-2 text-primary" />
                                     <h3 className="text-xl font-bold">Progress Tracking</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                                        Track your progress with insightful stats to keep you motivated and informed.
+                                        Track your progress to keep you motivated and informed.
                                     </p>
                                 </CardContent>
                             </Card>
@@ -119,7 +118,7 @@ export default function NeuroFitLanding() {
                             <div className="space-y-2">
                                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to Transform Your Fitness Journey?</h2>
                                 <p className="mx-auto max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
-                                    Join Neurofit today and experience the perfect synergy of physical and mental training.
+                                    Join today and experience the perfect workout personalization.
                                 </p>
                             </div>
                             <div className="space-x-4">
@@ -132,7 +131,7 @@ export default function NeuroFitLanding() {
             <footer className="w-full py-6 border-t">
                 <div className="container mx-auto px-4 md:px-6">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} Neurofit. All rights reserved.</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">© {new Date().getFullYear()} All rights reserved.</p>
                         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
                             <a className="text-xs hover:underline underline-offset-4" href="/terms">
                                 Terms of Service

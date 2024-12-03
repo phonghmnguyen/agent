@@ -13,19 +13,20 @@ class Exercise(BaseModel):
     muscle_groups: List[str] = Field(default_factory=list)
     difficulty: str = Field(
         default="beginner", description="Difficulty level of the exercise")
-    equipment: List[str] = Field(
-        default_factory=list, description="Equipment needed for the exercise")
+    equipments: List[str] = Field(
+        default_factory=list, description="Equipments needed for the exercise")
     instructions: str = Field(
         default_factory=list, description="Step-by-step instructions")
-    video_url: Optional[HttpUrl] = Field(
+    video_url: str = Field(
         default=None, description="URL to a demonstration video")
     tags: List[str] = Field(default_factory=list,
                             description="Tags for categorization")
     embedding: SkipJsonSchema[List[float]] = []
+    content: SkipJsonSchema[str] = ""
 
 
 class ExerciseInWorkout(BaseModel):
-    exercise_id: str
+    exercise_name: str
     day: str
     duration: Optional[int] = Field(
         default=None, description="Duration of the exercise in seconds")
@@ -34,7 +35,7 @@ class ExerciseInWorkout(BaseModel):
     sets: Optional[int] = Field(default=None, description="Number of sets")
     rest_between_sets: Optional[int] = Field(
         default=None, description="Rest time between sets in seconds")
-    estimated_calories_burned: Optional[float] = Field(
+    estimated_calories_burned: float = Field(
         default=None, description="Estimated calories burned per minute")
     notes: Optional[str] = Field(
         default=None, description="Specific notes for this exercise in this routine")
@@ -42,21 +43,16 @@ class ExerciseInWorkout(BaseModel):
 
 class Workout(BaseModel):
     id: SkipJsonSchema[str] = ""
-    user_id: SkipJsonSchema[str] = ""
+    user_id: str = Field(
+        default=None, description="ID of the user this workout is for")
     exercises: List[ExerciseInWorkout]
-    estimated_duration: Optional[int] = Field(
-        default=None, description="Estimated duration of the workout in seconds")
+    estimated_duration: int = Field(
+        default=None, description="Estimated duration of the workout in minutes")
     target_muscle_groups: List[str] = Field(
         default_factory=list, description="Main muscle groups targeted")
-    total_calories_burned: Optional[int] = Field(
+    total_calories_burned: int = Field(
         default=None, description="Estimated total calories burned")
-    created_for: Optional[str] = Field(
-        default=None, description="ID of the user who created the routine")
-    created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp")
-    last_modified: datetime = Field(
-        default_factory=datetime.now, description="Last modification timestamp")
-
+    
 
 class Questionnaire(BaseModel):
     class Frequency(str, Enum):
@@ -81,7 +77,6 @@ class Questionnaire(BaseModel):
         INTERMEDIATE = "intermediate"
         ADVANCED = "advanced"
 
-    user_id: SkipJsonSchema[str] = ""
     frequency: Frequency
     fitness_goal: FitnessGoal
     workout_location: WorkoutLocation

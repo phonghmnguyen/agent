@@ -27,7 +27,7 @@ class TokenVerifier:
     async def verify(self, token: Optional[HTTPAuthorizationCredentials]) -> str:
         if not token:
             raise UnauthenticatedException
-        
+    
         try:
             signing_key = self.jwks_client.get_signing_key_from_jwt(token.credentials).key
         except (jwt.exceptions.PyJWKClientError, jwt.exceptions.DecodeError) as err:
