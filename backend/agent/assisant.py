@@ -49,7 +49,9 @@ class WorkoutAssistantAgent:
         response = self.llm.run(messages=holistic_view, generation_kwargs={
                                 "tools": self.tool_schema})
 
-        while response and response["replies"][0].meta["finish_reason"] == "tool_calls":
+        turn = 2
+        while response and response["replies"][0].meta["finish_reason"] == "tool_calls" and turn != 0:
+            print(response["replies"][0])
             func_calls = json.loads(response["replies"][0].content)
             for func_call in func_calls:
                 func_name = func_call["function"]["name"]
@@ -59,8 +61,21 @@ class WorkoutAssistantAgent:
                     content=json.dumps(func_response), name=func_name))
                 response = self.llm.run(messages=holistic_view, generation_kwargs={
                     "tools": self.tool_schema})
+                turn -= 1
+                
+
 
         return response["replies"][0] if response else ChatMessage.from_assistant("Failed to generate answer")
 
-    def plan_workout_from_questionnaire(user_id: str, questionnaire: Questionnaire) -> Workout:
-        pass
+    async def plan_workout_from_questionnaire(self, user_id: str, questionnaire: Questionnaire) -> str:
+        # message = f"""
+        # I need you to create a workout plan for user {user_id} based on this questionnaire. You need to query the exercise database for a list of matching exercises and add it to the workout database. You must return the id of the workout plan you created.
+        # Questionnaire: {questionnaire.model_dump()}
+        # """
+        message = f"""
+        I need you to create a workout plan for user {user_id} based on this questionnaire. You need to query the exercise database for a list of matching exercises and return it.
+        Questionnaire: {questionnaire.model_dump()}
+        """
+        workout_id = self.chat(message, []).content
+        return workout_id
+        

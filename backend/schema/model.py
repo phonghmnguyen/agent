@@ -81,7 +81,6 @@ class Questionnaire(BaseModel):
         INTERMEDIATE = "intermediate"
         ADVANCED = "advanced"
 
-    user_id: SkipJsonSchema[str] = ""
     frequency: Frequency
     fitness_goal: FitnessGoal
     workout_location: WorkoutLocation

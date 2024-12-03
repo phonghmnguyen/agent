@@ -1,20 +1,17 @@
-import os
-from functools import lru_cache
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from pydantic_settings import BaseSettings
+from haystack.utils import Secret
 
 from api.controller import WorkoutController, ExerciseController
 from api.auth import TokenVerifier
 from storage.repository import WorkoutRepository, ExerciseRepository
 from agent.assisant import WorkoutAssistantAgent, FuncTool
+from agent.pipeline import MongoDBRetrievalPipeline, MongoDBAtlasDocumentStore
+
 
 app = FastAPI()
-
-
 
 
 class Settings(BaseSettings):
@@ -30,8 +27,6 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
-
-
 def main():
     settings = Settings()
     mongo_uri, mongo_db_name = settings.mongo_uri, settings.mongo_db_name
@@ -44,8 +39,26 @@ def main():
     )
     workout_repository = WorkoutRepository(
         mongo_uri, mongo_db_name, "workouts")
-    test_tool = FuncTool("print", "do nothing", lambda: print("hi"), {})
-    agent = WorkoutAssistantAgent(tools=[test_tool])
+    exercise_rag = MongoDBRetrievalPipeline(store=MongoDBAtlasDocumentStore(
+        mongo_connection_string=Secret.from_token(mongo_uri),
+        database_name=mongo_db_name,
+        collection_name="exercises",
+        vector_search_index="embedding"
+        ))
+    exercise_tool = FuncTool(
+        name="query_exercise",
+        desc="use this function to semantically search the exercise database for a list of matching exercises with a query",
+        func=exercise_rag.query,
+        params={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                },
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+    )
+    agent = WorkoutAssistantAgent(tools=[exercise_tool])
     workout_controller = WorkoutController(
         workout_repository, agent, token_verifier)
     exercise_repository = ExerciseRepository(

@@ -1,9 +1,7 @@
-from typing import Dict, Any
-
 from haystack import Pipeline
 from haystack_integrations.document_stores.mongodb_atlas import MongoDBAtlasDocumentStore
-from haystack.components.builders.prompt_builder import PromptBuilder
-from haystack.components.generators.chat import OpenAIChatGenerator
+from haystack.components.builders import PromptBuilder
+from haystack.components.generators import OpenAIGenerator
 from haystack.components.embedders import OpenAITextEmbedder
 from haystack_integrations.components.retrievers.mongodb_atlas import MongoDBAtlasEmbeddingRetriever
 from haystack_integrations.document_stores.mongodb_atlas import MongoDBAtlasDocumentStore
@@ -23,6 +21,7 @@ class MongoDBRetrievalPipeline(Pipeline):
         self.embedding_retriever = MongoDBAtlasEmbeddingRetriever(
             document_store=self.mongodb_store)
         self.prompt_builder = PromptBuilder(template="""
+                You 
                 Given these documents, answer the question.\nDocuments:
             {% for doc in documents %}
                 {{ doc.content }}
@@ -31,7 +30,7 @@ class MongoDBRetrievalPipeline(Pipeline):
             \nQuestion: {{query}}
             \nAnswer:
             """)
-        self.llm = OpenAIChatGenerator(
+        self.llm = OpenAIGenerator(
             model="gpt-4o")
         self._build_pipeline()
 
@@ -39,16 +38,11 @@ class MongoDBRetrievalPipeline(Pipeline):
         self.add_component(instance=self.text_embedder, name="text_embedder")
         self.add_component(instance=self.embedding_retriever,
                            name="embedding_retriever")
-        self.add_component(instance=self.prompt_builder, name="prompt_builder")
-        self.add_component(instance=self.llm, name="llm")
-        self.connect("text_embedder", "embedding_retriever")
-        self.connect("embedding_retriever", "prompt_builder.documents")
-        self.connect("prompt_builder", "llm")
+        self.connect("text_embedder.embedding", "embedding_retriever.query_embedding")
 
-    def query(self, query: str) -> Dict[str, Any]:
+    def query(self, query: str) -> list[dict]:
         return self.run(
             {
                 "text_embedder": {"text": query},
-                "prompt_builder": {"query": query},
             }
-        )
+        )["embedding_retriever"]["documents"]

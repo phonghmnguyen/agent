@@ -20,7 +20,7 @@ class WorkoutController:
                  ):
         self.router = router
         self.repository = repository
-        self.assistant = assisant_agent,
+        self.assistant = assisant_agent
         self.token_verifier = token_verifier
         self.register_routes()
 
@@ -30,9 +30,9 @@ class WorkoutController:
         self.router.get("/workouts/{workout_id}")(self.get_workout)
         self.router.delete("/workouts/{workout_id}")(self.remove_workout)
 
-    async def create_workout(self, questionnaire: Questionnaire, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
-        user_id = await self.token_verifier.verify(token)
-        workout_id = await self.assistant.plan_workout_from_questionnaire(user_id, questionnaire)
+    async def create_workout(self, questionnaire: Questionnaire):
+        # user_id = await self.token_verifier.verify(token)
+        workout_id = await self.assistant.plan_workout_from_questionnaire("testid", questionnaire)
         return HTTPResponse(201,  {"id": workout_id})
 
     async def get_workout(self, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
