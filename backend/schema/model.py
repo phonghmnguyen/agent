@@ -42,6 +42,7 @@ class ExerciseInWorkout(BaseModel):
 
 class Workout(BaseModel):
     id: SkipJsonSchema[str] = ""
+    user_id: SkipJsonSchema[str] = ""
     exercises: List[ExerciseInWorkout]
     estimated_duration: Optional[int] = Field(
         default=None, description="Estimated duration of the workout in seconds")
@@ -80,6 +81,7 @@ class Questionnaire(BaseModel):
         INTERMEDIATE = "intermediate"
         ADVANCED = "advanced"
 
+    user_id: SkipJsonSchema[str] = ""
     frequency: Frequency
     fitness_goal: FitnessGoal
     workout_location: WorkoutLocation

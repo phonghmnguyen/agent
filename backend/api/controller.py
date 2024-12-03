@@ -1,7 +1,11 @@
-from fastapi import APIRouter
+from typing import Optional
+
+from fastapi import APIRouter, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from openai import AsyncOpenAI, OpenAIError
 
 from api.http_response import HTTPResponse
+from api.auth import TokenVerifier
 from schema.model import Questionnaire, Exercise
 from storage.repository import WorkoutRepository, ExerciseRepository
 from agent.assisant import WorkoutAssistantAgent
@@ -11,11 +15,13 @@ class WorkoutController:
     def __init__(self,
                  repository: WorkoutRepository,
                  assisant_agent: WorkoutAssistantAgent,
+                 token_verifier: TokenVerifier,
                  router: APIRouter = APIRouter()
                  ):
         self.router = router
         self.repository = repository
-        self.assistant = assisant_agent
+        self.assistant = assisant_agent,
+        self.token_verifier = token_verifier
         self.register_routes()
 
     def register_routes(self):
@@ -24,13 +30,14 @@ class WorkoutController:
         self.router.get("/workouts/{workout_id}")(self.get_workout)
         self.router.delete("/workouts/{workout_id}")(self.remove_workout)
 
-    async def create_workout(self, questionnaire: Questionnaire):
-        workout = await self.assistant.recommend_workout_from_questionnaire(questionnaire)
-        workout_id = await self.repository.add(workout)
+    async def create_workout(self, questionnaire: Questionnaire, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
+        user_id = await self.token_verifier.verify(token)
+        workout_id = await self.assistant.plan_workout_from_questionnaire(user_id, questionnaire)
         return HTTPResponse(201,  {"id": workout_id})
 
-    async def get_workout(self, workout_id: str):
-        workout = await self.repository.get(workout_id)
+    async def get_workout(self, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
+        user_id = await self.token_verifier.verify(token)
+        workout = await self.repository.get(user_id)
         if not workout:
             return HTTPResponse(404)
         return HTTPResponse(200, workout.model_dump())
