@@ -19,7 +19,7 @@ class MongoDBRetrievalPipeline(Pipeline):
             model="text-embedding-3-small",
         )
         self.embedding_retriever = MongoDBAtlasEmbeddingRetriever(
-            document_store=self.mongodb_store, top_k=1)
+            document_store=self.mongodb_store, top_k=4)
         self._build_pipeline()
 
     def _build_pipeline(self) -> None:
@@ -34,5 +34,4 @@ class MongoDBRetrievalPipeline(Pipeline):
                 "text_embedder": {"text": query},
             }
         )["embedding_retriever"]["documents"]
-        print(docs[0].content)
         return [doc.content for doc in docs]

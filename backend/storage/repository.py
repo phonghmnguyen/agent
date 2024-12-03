@@ -16,8 +16,8 @@ class WorkoutRepository:
         result = await self.collection.insert_one(workout_dict)
         return str(result.inserted_id)
 
-    async def get(self, workout_id: str) -> Optional[Workout]:
-        workout_dict = await self.collection.find_one({"_id": ObjectId(workout_id)})
+    async def get(self, user_id: str) -> Optional[Workout]:
+        workout_dict = await self.collection.find_one({"user_id": user_id})
         if workout_dict:
             workout_dict["id"] = str(workout_dict.pop("_id"))
             return Workout(**workout_dict)

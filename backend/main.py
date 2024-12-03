@@ -9,6 +9,7 @@ from api.auth import TokenVerifier
 from storage.repository import WorkoutRepository, ExerciseRepository
 from agent.assisant import WorkoutAssistantAgent, FuncTool
 from agent.pipeline import MongoDBRetrievalPipeline, MongoDBAtlasDocumentStore
+from schema.model import Workout, ExerciseInWorkout
 
 
 app = FastAPI()
@@ -45,7 +46,7 @@ def main():
         collection_name="exercises",
         vector_search_index="vector_search"
         ))
-    exercise_tool = FuncTool(
+    query_exercise_tool = FuncTool(
         name="query_exercise",
         desc="use this function to semantically search the exercise database for a list of matching exercises with a query",
         func=exercise_rag.query,
@@ -58,7 +59,26 @@ def main():
                 "additionalProperties": False,
             },
     )
-    agent = WorkoutAssistantAgent(tools=[exercise_tool])
+    async def add_workout(user_id, exercises, estimated_duration, target_muscle_groups, total_calories_burned):
+        workout = Workout(
+            user_id=user_id,
+            exercises=[ExerciseInWorkout(**e) for e in exercises],
+            estimated_duration=estimated_duration,
+            target_muscle_groups=target_muscle_groups,
+            total_calories_burned=total_calories_burned,
+        )
+        workout_id = await workout_repository.add(workout=workout)
+        return True
+    
+    add_workout_tool = FuncTool(
+        name="async_add_workout",
+        desc="use this function to add a workout to the workout database. it will return true if successfully the workout is successfully added",
+        func=add_workout,
+        params=Workout.model_json_schema()
+    )
+
+
+    agent = WorkoutAssistantAgent(tools=[query_exercise_tool, add_workout_tool])
     workout_controller = WorkoutController(
         workout_repository, agent, token_verifier)
     exercise_repository = ExerciseRepository(

@@ -26,7 +26,7 @@ class Exercise(BaseModel):
 
 
 class ExerciseInWorkout(BaseModel):
-    exercise_id: str
+    exercise_name: str
     day: str
     duration: Optional[int] = Field(
         default=None, description="Duration of the exercise in seconds")
@@ -35,7 +35,7 @@ class ExerciseInWorkout(BaseModel):
     sets: Optional[int] = Field(default=None, description="Number of sets")
     rest_between_sets: Optional[int] = Field(
         default=None, description="Rest time between sets in seconds")
-    estimated_calories_burned: Optional[float] = Field(
+    estimated_calories_burned: float = Field(
         default=None, description="Estimated calories burned per minute")
     notes: Optional[str] = Field(
         default=None, description="Specific notes for this exercise in this routine")
@@ -43,21 +43,16 @@ class ExerciseInWorkout(BaseModel):
 
 class Workout(BaseModel):
     id: SkipJsonSchema[str] = ""
-    user_id: SkipJsonSchema[str] = ""
+    user_id: str = Field(
+        default=None, description="ID of the user this workout is for")
     exercises: List[ExerciseInWorkout]
-    estimated_duration: Optional[int] = Field(
-        default=None, description="Estimated duration of the workout in seconds")
+    estimated_duration: int = Field(
+        default=None, description="Estimated duration of the workout in minutes")
     target_muscle_groups: List[str] = Field(
         default_factory=list, description="Main muscle groups targeted")
-    total_calories_burned: Optional[int] = Field(
+    total_calories_burned: int = Field(
         default=None, description="Estimated total calories burned")
-    created_for: Optional[str] = Field(
-        default=None, description="ID of the user who created the routine")
-    created_at: datetime = Field(
-        default_factory=datetime.now, description="Creation timestamp")
-    last_modified: datetime = Field(
-        default_factory=datetime.now, description="Last modification timestamp")
-
+    
 
 class Questionnaire(BaseModel):
     class Frequency(str, Enum):

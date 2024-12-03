@@ -26,25 +26,23 @@ class WorkoutController:
 
     def register_routes(self):
         self.router.post("/workouts")(self.create_workout)
-        self.router.get("/workouts")(self.list_all_workouts)
-        self.router.get("/workouts/{workout_id}")(self.get_workout)
+        self.router.get("/workouts")(self.get_workout)
         self.router.delete("/workouts/{workout_id}")(self.remove_workout)
 
-    async def create_workout(self, questionnaire: Questionnaire):
-        # user_id = await self.token_verifier.verify(token)
-        workout_id = await self.assistant.plan_workout_from_questionnaire("testid", questionnaire)
+    async def create_workout(self, questionnaire: Questionnaire, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
+        user_id = await self.token_verifier.verify(token)
+        print(f"SET{user_id}")
+        workout_id = await self.assistant.plan_workout_from_questionnaire(user_id, questionnaire)
         return HTTPResponse(201,  {"id": workout_id})
 
     async def get_workout(self, token: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer())):
         user_id = await self.token_verifier.verify(token)
+        print(f"GET{user_id}")
         workout = await self.repository.get(user_id)
+        print(workout)
         if not workout:
             return HTTPResponse(404)
         return HTTPResponse(200, workout.model_dump())
-
-    async def list_all_workouts(self):
-        workouts = await self.repository.list_all()
-        return HTTPResponse(200, [workout.model_dump() for workout in workouts])
 
     async def remove_workout(self, workout_id: str):
         removed = await self.repository.remove(workout_id)
