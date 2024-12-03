@@ -43,7 +43,7 @@ def main():
         mongo_connection_string=Secret.from_token(mongo_uri),
         database_name=mongo_db_name,
         collection_name="exercises",
-        vector_search_index="embedding"
+        vector_search_index="vector_search"
         ))
     exercise_tool = FuncTool(
         name="query_exercise",

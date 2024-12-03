@@ -1,7 +1,6 @@
 from haystack import Pipeline
 from haystack_integrations.document_stores.mongodb_atlas import MongoDBAtlasDocumentStore
 from haystack.components.builders import PromptBuilder
-from haystack.components.generators import OpenAIGenerator
 from haystack.components.embedders import OpenAITextEmbedder
 from haystack_integrations.components.retrievers.mongodb_atlas import MongoDBAtlasEmbeddingRetriever
 from haystack_integrations.document_stores.mongodb_atlas import MongoDBAtlasDocumentStore
@@ -17,21 +16,10 @@ class MongoDBRetrievalPipeline(Pipeline):
         super().__init__()
         self.mongodb_store = store
         self.text_embedder = OpenAITextEmbedder(
-            model="text-embedding-3-small")
+            model="text-embedding-3-small",
+        )
         self.embedding_retriever = MongoDBAtlasEmbeddingRetriever(
-            document_store=self.mongodb_store)
-        self.prompt_builder = PromptBuilder(template="""
-                You 
-                Given these documents, answer the question.\nDocuments:
-            {% for doc in documents %}
-                {{ doc.content }}
-            {% endfor %}
-
-            \nQuestion: {{query}}
-            \nAnswer:
-            """)
-        self.llm = OpenAIGenerator(
-            model="gpt-4o")
+            document_store=self.mongodb_store, top_k=1)
         self._build_pipeline()
 
     def _build_pipeline(self) -> None:
@@ -41,8 +29,10 @@ class MongoDBRetrievalPipeline(Pipeline):
         self.connect("text_embedder.embedding", "embedding_retriever.query_embedding")
 
     def query(self, query: str) -> list[dict]:
-        return self.run(
+        docs = self.run(
             {
                 "text_embedder": {"text": query},
             }
         )["embedding_retriever"]["documents"]
+        print(docs[0].content)
+        return [doc.content for doc in docs]

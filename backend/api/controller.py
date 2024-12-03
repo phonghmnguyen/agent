@@ -71,8 +71,8 @@ class ExerciseController:
         self.router.delete("/exercises/{exercise_id}")(self.remove_exercise)
 
     async def create_exercise(self, exercise: Exercise):
-        embed_text = f"{exercise.name} {exercise.description} {' '.join(exercise.muscle_groups)} {exercise.difficulty} {
-            ' '.join(exercise.equipment)} {exercise.instructions} {' '.join(exercise.tags)}"
+        embed_text = f"name: {exercise.name}, description: {exercise.description}, muscle groups: {' '.join(exercise.muscle_groups)}, difficulty: {exercise.difficulty}, equipments: {
+            ' '.join(exercise.equipments)}, instructions: {exercise.instructions}, tags: {' '.join(exercise.tags)}"
         try:
             embedding = await self.openai_client.embeddings.create(
                 input=embed_text,
@@ -81,6 +81,7 @@ class ExerciseController:
         except OpenAIError:
             return HTTPResponse(503)
 
+        exercise.content = embed_text
         exercise.embedding = embedding.data[0].embedding
         exercise_id = await self.repository.add(exercise)
         return HTTPResponse(201, {"id": exercise_id})

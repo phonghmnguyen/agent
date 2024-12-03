@@ -49,19 +49,20 @@ class WorkoutAssistantAgent:
         response = self.llm.run(messages=holistic_view, generation_kwargs={
                                 "tools": self.tool_schema})
 
-        turn = 2
-        while response and response["replies"][0].meta["finish_reason"] == "tool_calls" and turn != 0:
+        while response and response["replies"][0].meta["finish_reason"] == "tool_calls":
             print(response["replies"][0])
             func_calls = json.loads(response["replies"][0].content)
             for func_call in func_calls:
                 func_name = func_call["function"]["name"]
                 func_args = json.loads(func_call["function"]["arguments"])
                 func_response = self.tool_mapping[func_name](**func_args)
+                print(func_response)
                 holistic_view.append(ChatMessage.from_function(
                     content=json.dumps(func_response), name=func_name))
                 response = self.llm.run(messages=holistic_view, generation_kwargs={
                     "tools": self.tool_schema})
-                turn -= 1
+                break
+            break
                 
 
 
